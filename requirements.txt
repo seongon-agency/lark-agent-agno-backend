@@ -7,7 +7,7 @@ pydantic==2.5.0
 agno==0.1.0
 
 # OpenAI
-openai==1.3.7
+openai>=1.40.0
 
 # Database for session storage
 sqlalchemy==2.0.23
