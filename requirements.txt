@@ -1,0 +1,16 @@
+# FastAPI and ASGI server
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+pydantic==2.5.0
+
+# Agno AI framework
+agno==0.1.0
+
+# OpenAI
+openai==1.3.7
+
+# Database for session storage
+sqlalchemy==2.0.23
+
+# Utilities
+python-dotenv==1.0.0
