@@ -1,10 +1,10 @@
 # FastAPI and ASGI server
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-pydantic==2.5.0
+fastapi>=0.104.1
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
 
 # Agno AI framework
-agno==0.1.0
+agno>=0.5.0
 
 # OpenAI
 openai>=1.40.0

@@ -15,7 +15,7 @@ import uvicorn
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.storage.agent.sqlite import SqlAgentStorage
+from agno.storage.agent.sqlite import SqliteAgentStorage
 
 # Configure logging
 logging.basicConfig(
@@ -61,7 +61,7 @@ class ChatResponse(BaseModel):
 STORAGE_DIR = os.getenv("STORAGE_DIR", "./data")
 os.makedirs(STORAGE_DIR, exist_ok=True)
 
-agent_storage = SqlAgentStorage(
+agent_storage = SqliteAgentStorage(
     table_name="agent_sessions",
     db_file=f"{STORAGE_DIR}/agents.db"
 )
