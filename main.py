@@ -35,7 +35,7 @@ SUPABASE_DB_URL = (
     f"postgresql://postgres:{SUPABASE_PASSWORD}@db.{SUPABASE_PROJECT}:5432/postgres"
 )
 
-db = PostgresDb(ddb_url=SUPABASE_DB_URL)
+db = PostgresDb(db_url=SUPABASE_DB_URL)
 
 load_dotenv()
 
