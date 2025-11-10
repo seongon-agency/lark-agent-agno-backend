@@ -43,12 +43,15 @@ SUPABASE_REGION = os.getenv("SUPABASE_REGION", "ap-southeast-1")  # Default regi
 # Use Supabase connection pooler (required for Railway/serverless)
 # Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
 SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
-db = PostgresDb(
-    db_url=SUPABASE_DB_URL,
-    auto_upgrade_schema=True  # Automatically create/upgrade tables
-)
+db = PostgresDb(db_url=SUPABASE_DB_URL)
 logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
-logger.info(f"Database URL: postgresql://postgres.{SUPABASE_PROJECT}:***@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres")
+
+# Create tables if they don't exist
+try:
+    db.create()
+    logger.info("Database tables created/verified successfully")
+except Exception as e:
+    logger.warning(f"Database table creation note: {e}")
 
 
 app = FastAPI(title="Lark Agno Bot")
@@ -197,17 +200,6 @@ async def process_message(event: dict):
         logger.info(f"Using session: {session}")
         response = lark_base_agent.run(text)
         reply = response.content if hasattr(response, 'content') else str(response)
-
-        # Debug: Check what's in the database
-        try:
-            import sqlalchemy
-            engine = sqlalchemy.create_engine(SUPABASE_DB_URL)
-            with engine.connect() as conn:
-                result = conn.execute(sqlalchemy.text("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"))
-                tables = [row[0] for row in result]
-                logger.info(f"Tables in Supabase public schema: {tables}")
-        except Exception as e:
-            logger.warning(f"Could not query tables: {e}")
 
         logger.info(f"AI: {reply[:80]}...")
         send_message(chat_id, reply)
