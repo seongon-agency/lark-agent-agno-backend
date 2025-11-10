@@ -185,7 +185,7 @@ async def process_message(event: dict):
             db=db,
             add_history_to_context=True,
             read_chat_history=True,
-            num_history_runs=10,
+            num_history_runs=3,
             search_session_history=True,
             # markdown=True,
             debug_mode=True
