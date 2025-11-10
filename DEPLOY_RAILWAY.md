@@ -67,8 +67,9 @@ In Railway dashboard:
 ```
 APP_ID=cli_xxxxxxxxxxxxxx
 APP_SECRET=xxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_KEY=sk-xxxxxxxxxxxxxxxxxxxxxxxxxx
-OPENAI_MODEL=gpt-4
+APP_ENCRYPT_KEY=xxxxxxxxxxxxxxxxxxxxxxxx
+XAI_API_KEY=xai-xxxxxxxxxxxxxxxxxxxxxxxxxx
+LARK_BASE_ID=your_base_id
 ```
 
 **Important**: Don't set `HOST` or `PORT` - Railway handles these automatically!
@@ -175,9 +176,9 @@ For production/heavy use, upgrade to Pro ($5/month minimum).
 |----------|----------|---------|-------------|
 | `APP_ID` | ✅ Yes | `cli_a1b2c3d4` | Feishu app ID |
 | `APP_SECRET` | ✅ Yes | `abc123xyz789` | Feishu app secret |
-| `OPENAI_KEY` | ✅ Yes | `sk-proj-xxx` | OpenAI API key |
-| `OPENAI_MODEL` | ❌ No | `gpt-4` | OpenAI model (default: gpt-4) |
-| `STORAGE_DIR` | ❌ No | `/app/data` | SQLite storage path (auto-set) |
+| `APP_ENCRYPT_KEY` | ✅ Yes | `abc123xyz789` | Feishu encryption key for webhooks |
+| `XAI_API_KEY` | ✅ Yes | `xai-xxx` | xAI API key for Grok model |
+| `LARK_BASE_ID` | ✅ Yes | `Q9gVbS1j1a...` | Lark Base ID for task management |
 | `HOST` | ❌ No | `0.0.0.0` | Server host (Railway handles) |
 | `PORT` | ❌ No | `8000` | Server port (Railway handles) |
 
