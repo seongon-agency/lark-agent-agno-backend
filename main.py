@@ -26,8 +26,9 @@ from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
 # Database
 from agno.db.sqlite import SqliteDb
+from agno.db.sqlite import AsyncSqliteDb
 
-db = SqliteDb(db_file="agno.db")
+db = AsyncSqliteDb(db_file="data.db")
 
 load_dotenv()
 
