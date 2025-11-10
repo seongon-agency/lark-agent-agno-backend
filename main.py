@@ -15,7 +15,6 @@ import uvicorn
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
-from agno.storage.agent.sqlite import SqliteAgentStorage
 
 import lark_oapi as lark
 from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
@@ -39,27 +38,15 @@ feishu_client = lark.Client.builder() \
     .app_secret(os.getenv("APP_SECRET")) \
     .build()
 
-# Agent storage
-STORAGE_DIR = os.getenv("STORAGE_DIR", "./data")
-os.makedirs(STORAGE_DIR, exist_ok=True)
-
-agent_storage = SqliteAgentStorage(
-    table_name="agent_sessions",
-    db_file=f"{STORAGE_DIR}/agents.db"
-)
-
 
 def create_agent(session_id: str) -> Agent:
     """Create Agno agent for chat"""
     return Agent(
-        session_id=session_id,
         model=OpenAIChat(
             id=os.getenv("OPENAI_MODEL", "gpt-4"),
             api_key=os.getenv("OPENAI_KEY"),
         ),
-        storage=agent_storage,
         description="You are a helpful AI assistant. Answer concisely and clearly.",
-        add_history_to_messages=True,
         markdown=True,
     )
 
@@ -192,7 +179,6 @@ if __name__ == "__main__":
 
     logger.info("=" * 50)
     logger.info("Starting Feishu Agno Bot")
-    logger.info(f"Storage: {STORAGE_DIR}")
     logger.info("=" * 50)
 
     # Run server
