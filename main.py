@@ -46,6 +46,13 @@ SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}
 db = PostgresDb(db_url=SUPABASE_DB_URL)
 logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
 
+# Create tables if they don't exist
+try:
+    db.create()
+    logger.info("Database tables created/verified successfully")
+except Exception as e:
+    logger.warning(f"Database table creation note: {e}")
+
 
 app = FastAPI(title="Lark Agno Bot")
 
@@ -187,7 +194,7 @@ async def process_message(event: dict):
             num_history_runs=3,
             search_session_history=True,
             markdown=True,
-            debug_mode=False
+            debug_mode=True
         )
 
         logger.info(f"Using session: {session}")
