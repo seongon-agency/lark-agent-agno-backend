@@ -8,8 +8,8 @@ import json
 import logging
 import base64
 import hashlib
-from datetime import datetime
-from typing import Optional
+from datetime import datetime, timedelta
+from typing import Optional, Set
 
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
@@ -42,6 +42,29 @@ feishu_client = lark.Client.builder() \
     .app_id(os.getenv("APP_ID")) \
     .app_secret(os.getenv("APP_SECRET")) \
     .build()
+
+# Message deduplication cache
+processed_messages: dict[str, datetime] = {}
+CACHE_EXPIRY_MINUTES = 30
+
+
+def is_message_processed(message_id: str) -> bool:
+    """Check if message has been processed recently"""
+    # Clean expired entries
+    now = datetime.now()
+    expired = [mid for mid, timestamp in processed_messages.items()
+               if now - timestamp > timedelta(minutes=CACHE_EXPIRY_MINUTES)]
+    for mid in expired:
+        del processed_messages[mid]
+
+    # Check if already processed
+    if message_id in processed_messages:
+        logger.info(f"Message {message_id} already processed, skipping...")
+        return True
+
+    # Mark as processed
+    processed_messages[message_id] = now
+    return False
 
 
 def decrypt_lark_data(encrypt_str: str, encrypt_key: str) -> dict:
@@ -225,7 +248,12 @@ async def handle_message(event: dict):
         message = event.get("message", {})
         msg_type = message.get("message_type")
         chat_id = message.get("chat_id")
+        message_id = message.get("message_id")
         content_str = message.get("content", "{}")
+
+        # Deduplicate messages
+        if message_id and is_message_processed(message_id):
+            return
 
         # Only handle text messages
         if msg_type != "text":
