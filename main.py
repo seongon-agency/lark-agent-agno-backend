@@ -28,6 +28,12 @@ from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 from agno.db.postgres import PostgresDb
 from agno.db.sqlite import SqliteDb
 
+load_dotenv()
+
+# Setup logging first
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+logger = logging.getLogger(__name__)
+
 # Get Supabase credentials from environment
 SUPABASE_PROJECT = os.getenv("SUPABASE_PROJECT")
 SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
@@ -40,11 +46,6 @@ if SUPABASE_PROJECT and SUPABASE_PASSWORD:
 else:
     db = SqliteDb(db_file="./data/agent_memory.db")
     logger.info("Using SQLite for memory (./data/agent_memory.db)")
-
-load_dotenv()
-
-logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
-logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Lark Agno Bot")
 
