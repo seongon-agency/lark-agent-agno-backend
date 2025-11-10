@@ -179,7 +179,7 @@ async def process_message(event: dict):
             cache_session=True
         )
 
-        response = lark_base_agent.run(text)
+        response = lark_base_agent.arun(text)
         reply = response.content if hasattr(response, 'content') else str(response)
 
         logger.info(f"AI: {reply[:80]}...")
