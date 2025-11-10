@@ -127,9 +127,9 @@ async def handle_card(request: Request):
 
         # Check if encrypted
         if "encrypt" in data:
-            encrypt_key = os.getenv("ENCRYPT_KEY")
+            encrypt_key = os.getenv("APP_ENCRYPT_KEY")
             if not encrypt_key:
-                logger.error("ENCRYPT_KEY not set but received encrypted payload")
+                logger.error("APP_ENCRYPT_KEY not set but received encrypted payload")
                 return {"error": "Encryption key not configured"}
 
             logger.info("Decrypting card webhook payload...")
@@ -171,9 +171,9 @@ async def handle_event(request: Request):
 
         # Check if encrypted
         if "encrypt" in data:
-            encrypt_key = os.getenv("ENCRYPT_KEY")
+            encrypt_key = os.getenv("APP_ENCRYPT_KEY")
             if not encrypt_key:
-                logger.error("ENCRYPT_KEY not set but received encrypted payload")
+                logger.error("APP_ENCRYPT_KEY not set but received encrypted payload")
                 return {"error": "Encryption key not configured"}
 
             logger.info("Decrypting webhook payload...")
