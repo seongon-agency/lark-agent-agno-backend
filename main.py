@@ -45,18 +45,42 @@ logger.info(f"Using Supabase PostgreSQL (region: {SUPABASE_REGION})")
 # Initialize MCP tools ONCE at startup
 logger.info("Initializing Lark MCP tools...")
 try:
+    import time
     lark_mcp = MultiMCPTools(
         commands=[
             f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
         ],
-        timeout_seconds=60,
+        timeout_seconds=120,
         allow_partial_failure=True
     )
-    tool_names = [tool.name for tool in lark_mcp.functions] if hasattr(lark_mcp, 'functions') else []
+
+    # Give MCP time to fully initialize and discover tools
+    logger.info("Waiting for MCP tools to fully load...")
+    time.sleep(5)
+
+    # Check available tools
+    tool_count = 0
+    tool_names = []
+
+    if hasattr(lark_mcp, 'functions') and lark_mcp.functions:
+        tool_names = [tool.name for tool in lark_mcp.functions]
+        tool_count = len(tool_names)
+
+    if hasattr(lark_mcp, 'tools') and lark_mcp.tools:
+        alt_names = [str(tool) for tool in lark_mcp.tools]
+        logger.info(f"Alt tools found: {alt_names}")
+
     logger.info(f"✓ Lark MCP initialized successfully")
-    logger.info(f"✓ Available tools: {len(tool_names)} tools")
+    logger.info(f"✓ Available tools: {tool_count} tools")
+    if tool_names:
+        logger.info(f"✓ Tool names: {tool_names}")
+    else:
+        logger.warning("⚠ MCP initialized but no tools discovered yet - they may load on first use")
+
 except Exception as e:
     logger.error(f"✗ Failed to initialize MCP: {e}")
+    import traceback
+    logger.error(traceback.format_exc())
     lark_mcp = None
 
 # Create FastAPI app
