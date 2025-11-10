@@ -44,7 +44,7 @@ db = None
 if SUPABASE_PROJECT and SUPABASE_PASSWORD:
     # Use Supabase connection pooler (required for Railway/serverless)
     # Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
-    SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-0-{SUPABASE_REGION}.pooler.supabase.com:6543/postgres"
+    SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
     db = PostgresDb(db_url=SUPABASE_DB_URL)
     logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
 else:
