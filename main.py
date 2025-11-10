@@ -6,12 +6,17 @@ Simple chat bot - nothing more, nothing less
 import os
 import json
 import logging
+import base64
+import hashlib
 from datetime import datetime
 from typing import Optional
 
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
 import uvicorn
+
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import unpad
 
 from agno.agent import Agent
 from agno.models.openai import OpenAIChat
@@ -37,6 +42,30 @@ feishu_client = lark.Client.builder() \
     .app_id(os.getenv("APP_ID")) \
     .app_secret(os.getenv("APP_SECRET")) \
     .build()
+
+
+def decrypt_lark_data(encrypt_str: str, encrypt_key: str) -> dict:
+    """Decrypt Lark encrypted webhook data using AES-256-CBC"""
+    try:
+        # Decode base64
+        cipher_text = base64.b64decode(encrypt_str)
+
+        # Create key from encrypt_key using SHA256
+        key = hashlib.sha256(encrypt_key.encode()).digest()
+
+        # Extract IV (first 16 bytes) and encrypted data
+        iv = cipher_text[:16]
+        encrypted_data = cipher_text[16:]
+
+        # Decrypt using AES CBC mode
+        cipher = AES.new(key, AES.MODE_CBC, iv)
+        decrypted = unpad(cipher.decrypt(encrypted_data), AES.block_size)
+
+        # Parse JSON
+        return json.loads(decrypted.decode('utf-8'))
+    except Exception as e:
+        logger.error(f"Decryption failed: {e}")
+        raise
 
 
 def create_agent(session_id: str) -> Agent:
@@ -96,6 +125,17 @@ async def handle_card(request: Request):
 
         data = json.loads(body_str)
 
+        # Check if encrypted
+        if "encrypt" in data:
+            encrypt_key = os.getenv("ENCRYPT_KEY")
+            if not encrypt_key:
+                logger.error("ENCRYPT_KEY not set but received encrypted payload")
+                return {"error": "Encryption key not configured"}
+
+            logger.info("Decrypting card webhook payload...")
+            data = decrypt_lark_data(data["encrypt"], encrypt_key)
+            logger.info(f"Decrypted card data: {json.dumps(data)[:200]}")
+
         # Handle URL verification challenge (v1 format)
         if "challenge" in data:
             challenge = data["challenge"]
@@ -128,6 +168,17 @@ async def handle_event(request: Request):
         logger.info(f"Received webhook request: {body_str[:200]}")
 
         data = json.loads(body_str)
+
+        # Check if encrypted
+        if "encrypt" in data:
+            encrypt_key = os.getenv("ENCRYPT_KEY")
+            if not encrypt_key:
+                logger.error("ENCRYPT_KEY not set but received encrypted payload")
+                return {"error": "Encryption key not configured"}
+
+            logger.info("Decrypting webhook payload...")
+            data = decrypt_lark_data(data["encrypt"], encrypt_key)
+            logger.info(f"Decrypted data: {json.dumps(data)[:200]}")
 
         # Handle URL verification challenge (v1 format)
         if "challenge" in data:

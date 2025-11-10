@@ -12,5 +12,8 @@ agno>=2.0.0
 # OpenAI
 openai>=1.40.0
 
+# Cryptography for Lark encryption
+pycryptodome>=3.19.0
+
 # Utilities
 python-dotenv==1.0.0
