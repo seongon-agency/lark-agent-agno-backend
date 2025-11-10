@@ -1,5 +1,4 @@
-"""Minimal Feishu Bot with Agno AI"""
-
+# Basic imports
 import os
 import json
 import logging
@@ -7,14 +6,21 @@ import base64
 import hashlib
 from datetime import datetime, timedelta
 
+# FastAPI and Encryption
 from fastapi import FastAPI, Request
 from dotenv import load_dotenv
 import uvicorn
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import unpad
 
+# Agno Imports
 from agno.agent import Agent
-from agno.models.openai import OpenAIChat
+# from agno.models.openai import OpenAIChat
+from agno.models.xai import xAI
+from agno.tools.mcp import MultiMCPTools
+
+
+# Larksuite SDK Imports
 import lark_oapi as lark
 from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
@@ -23,7 +29,7 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Feishu Agno Bot")
+app = FastAPI(title="Lark Agno Bot")
 
 feishu_client = lark.Client.builder() \
     .app_id(os.getenv("APP_ID")) \
@@ -132,16 +138,42 @@ async def process_message(event: dict):
         chat_id = msg.get("chat_id")
         session = f"{chat_id}_{sender}"
 
-        agent = Agent(
-            model=OpenAIChat(
-                id=os.getenv("OPENAI_MODEL", "gpt-4"),
-                api_key=os.getenv("OPENAI_KEY")
-            ),
-            description="You are a helpful AI assistant. Answer concisely and clearly.",
-            markdown=True
+        # configure mcp
+        lark_mcp = MultiMCPTools(
+            commands=[
+                f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
+            ],
+        # env=content_env,
+        timeout_seconds=60,  # Increase timeout to 30 seconds
+        allow_partial_failure=True  # Allow agent to run even if Freepik connection fails
         )
 
-        response = agent.run(text)
+        lark_base_agent = Agent(
+            name = "Lark Task Management Agent",
+            role = "Manage Lark Tasks within a Lark Base using Lark MCP",
+            model = xAI(
+            id="grok-4-0709",
+            api_key=os.getenv("XAI_API_KEY"),
+            ),
+            description="You are a task management assistant that helps users manage their tasks in Lark Base using Lark MCP. You can create, update, delete, and retrieve tasks based on user requests.",
+            instructions=[
+                "Use the Lark MCP tool to interact with Lark Base. The specific base id is 'Q9gVbS1j1anjh7sP56Dln1xFgdG'.",
+                "When creating or updating tasks, ensure to include all necessary fields such as title, description, due date, and status.",
+                "Always confirm actions with the user before making changes to their tasks.",
+                "Provide clear and concise responses to the user regarding their task management requests."
+            ],
+            tools = [lark_mcp],
+            # db = db,
+            add_history_to_context=True,
+            read_chat_history=True,
+            num_history_runs=2,
+            search_session_history=True,
+            markdown=True,
+            debug_mode=False,  # Hide intermediate output - only team sees this
+            cache_session=True
+        )
+
+        response = lark_base_agent.run(text)
         reply = response.content if hasattr(response, 'content') else str(response)
 
         logger.info(f"AI: {reply[:80]}...")
@@ -156,12 +188,12 @@ async def process_message(event: dict):
 
 
 if __name__ == "__main__":
-    required = ["APP_ID", "APP_SECRET", "OPENAI_KEY"]
+    required = ["APP_ID", "APP_SECRET", "XAI_API_KEY"]
     missing = [v for v in required if not os.getenv(v)]
 
     if missing:
         logger.error(f"Missing env vars: {', '.join(missing)}")
         exit(1)
 
-    logger.info("Starting Feishu Agno Bot")
+    logger.info("Starting Lark Agno Bot")
     uvicorn.run("main:app", host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8000")), reload=True)
