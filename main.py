@@ -28,11 +28,13 @@ from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 from agno.db.postgres import PostgresDb
 from agno.db.sqlite import SqliteDb
 
-# Get database URL from environment
-SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
+# Get Supabase credentials from environment
+SUPABASE_PROJECT = os.getenv("SUPABASE_PROJECT")
+SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
 
 # Initialize database - use Supabase if available, otherwise SQLite
-if SUPABASE_DB_URL:
+if SUPABASE_PROJECT and SUPABASE_PASSWORD:
+    SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
     db = PostgresDb(db_url=SUPABASE_DB_URL)
     logger.info("Using Supabase PostgreSQL for memory")
 else:
