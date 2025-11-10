@@ -15,7 +15,6 @@ from Crypto.Util.Padding import unpad
 
 # Agno Imports
 from agno.agent import Agent
-from agno.models.xai import xAI
 from agno.models.anthropic import Claude
 from agno.tools.mcp import MultiMCPTools
 
@@ -42,58 +41,34 @@ SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}
 db = PostgresDb(db_url=SUPABASE_DB_URL)
 logger.info(f"Using Supabase PostgreSQL (region: {SUPABASE_REGION})")
 
-# Initialize MCP tools ONCE at startup
-logger.info("Initializing Lark MCP tools...")
-try:
-    import time
+# Message deduplication
+processed_messages = {}
+
+# Global MCP and agent - will be initialized in setup function
+lark_mcp = None
+lark_base_agent_template = None
+
+
+def setup_agent():
+    """Initialize MCP tools and agent template - called once at startup"""
+    global lark_mcp, lark_base_agent_template
+
+    logger.info("Setting up Lark MCP tools...")
+
+    # Initialize MCP tools
     lark_mcp = MultiMCPTools(
         commands=[
-            f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
+            f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
         ],
         timeout_seconds=120,
         allow_partial_failure=True
     )
 
-    # Give MCP time to fully initialize and discover tools
-    logger.info("Waiting for MCP tools to fully load...")
-    time.sleep(5)
+    # Give it a moment to initialize
+    import time
+    time.sleep(3)
 
-    # Check available tools
-    tool_count = 0
-    tool_names = []
-
-    if hasattr(lark_mcp, 'functions') and lark_mcp.functions:
-        tool_names = [tool.name for tool in lark_mcp.functions]
-        tool_count = len(tool_names)
-
-    if hasattr(lark_mcp, 'tools') and lark_mcp.tools:
-        alt_names = [str(tool) for tool in lark_mcp.tools]
-        logger.info(f"Alt tools found: {alt_names}")
-
-    logger.info(f"✓ Lark MCP initialized successfully")
-    logger.info(f"✓ Available tools: {tool_count} tools")
-    if tool_names:
-        logger.info(f"✓ Tool names: {tool_names}")
-    else:
-        logger.warning("⚠ MCP initialized but no tools discovered yet - they may load on first use")
-
-except Exception as e:
-    logger.error(f"✗ Failed to initialize MCP: {e}")
-    import traceback
-    logger.error(traceback.format_exc())
-    lark_mcp = None
-
-# Create FastAPI app
-app = FastAPI(title="Lark Agno Bot")
-
-# Feishu client
-feishu_client = lark.Client.builder() \
-    .app_id(os.getenv("APP_ID")) \
-    .app_secret(os.getenv("APP_SECRET")) \
-    .build()
-
-# Message deduplication
-processed_messages = {}
+    logger.info("✓ Lark MCP tools ready")
 
 
 def is_duplicate(msg_id: str) -> bool:
@@ -117,6 +92,11 @@ def decrypt(encrypted: str) -> dict:
 
 
 def send_message(chat_id: str, text: str):
+    feishu_client = lark.Client.builder() \
+        .app_id(os.getenv("APP_ID")) \
+        .app_secret(os.getenv("APP_SECRET")) \
+        .build()
+
     request = CreateMessageRequest.builder() \
         .receive_id_type("chat_id") \
         .request_body(
@@ -132,6 +112,16 @@ def send_message(chat_id: str, text: str):
         logger.info("Message sent")
     else:
         logger.error(f"Send failed: {response.code}")
+
+
+# Create FastAPI app
+app = FastAPI(title="Lark Agno Bot")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize MCP tools when the app starts"""
+    setup_agent()
 
 
 @app.get("/")
@@ -194,8 +184,8 @@ async def process_message(event: dict):
         chat_id = msg.get("chat_id")
         session = f"{chat_id}_{sender}"
 
-        # Create agent for this session
-        lark_base_agent = Agent(
+        # Create agent for this session (MCP tools already initialized)
+        agent = Agent(
             session_id=session,
             name="Lark Task Management Agent",
             role="Manage Lark Tasks within a Lark Base using Lark MCP",
@@ -224,7 +214,7 @@ async def process_message(event: dict):
         )
 
         logger.info(f"Using session: {session}")
-        response = lark_base_agent.run(text)
+        response = agent.run(text)
         reply = response.content if hasattr(response, 'content') else str(response)
 
         logger.info(f"AI: {reply[:80]}...")
@@ -249,4 +239,4 @@ if __name__ == "__main__":
         exit(1)
 
     logger.info("Starting Lark Agno Bot")
-    uvicorn.run("main:app", host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8000")), reload=True)
+    uvicorn.run("main:app", host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8000")), reload=False)
