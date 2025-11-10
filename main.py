@@ -159,14 +159,25 @@ async def process_message(event: dict):
 
         # Configure MCP
         logger.info("Initializing Lark MCP tools...")
-        lark_mcp = MultiMCPTools(
-            commands=[
-                f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
-            ],
-            timeout_seconds=60,
-            allow_partial_failure=True
-        )
-        logger.info(f"Lark MCP tools initialized. Available tools: {lark_mcp.functions if hasattr(lark_mcp, 'functions') else 'checking...'}")
+        try:
+            lark_mcp = MultiMCPTools(
+                commands=[
+                    f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
+                ],
+                timeout_seconds=120,  # Increased timeout
+                allow_partial_failure=False  # Fail if MCP doesn't work
+            )
+            # List available tools
+            tool_names = [tool.name for tool in lark_mcp.functions] if hasattr(lark_mcp, 'functions') else []
+            logger.info(f"✓ Lark MCP tools initialized successfully!")
+            logger.info(f"✓ Available tools: {tool_names}")
+            logger.info(f"✓ Total tools available: {len(tool_names)}")
+        except Exception as e:
+            logger.error(f"✗ FAILED to initialize Lark MCP tools: {e}")
+            logger.error(f"✗ Error type: {type(e).__name__}")
+            import traceback
+            logger.error(f"✗ Traceback: {traceback.format_exc()}")
+            raise
 
         lark_base_agent = Agent(
             session_id=session,
