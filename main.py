@@ -90,28 +90,47 @@ async def handle_event(request: Request):
     """Handle Feishu webhook events"""
     try:
         body = await request.body()
-        data = json.loads(body)
+        body_str = body.decode('utf-8')
 
-        # Handle URL verification challenge
+        logger.info(f"Received webhook request: {body_str[:200]}")
+
+        data = json.loads(body_str)
+
+        # Handle URL verification challenge (v1 format)
         if "challenge" in data:
-            logger.info("Received challenge, responding...")
-            return {"challenge": data["challenge"]}
+            challenge = data["challenge"]
+            logger.info(f"Received challenge: {challenge}")
+            return {"challenge": challenge}
 
-        # Handle message events
-        if "event" in data:
-            event = data["event"]
-            event_type = data.get("header", {}).get("event_type")
+        # Handle URL verification challenge (v2 format)
+        if "type" in data and data["type"] == "url_verification":
+            challenge = data.get("challenge", "")
+            logger.info(f"Received v2 challenge: {challenge}")
+            return {"challenge": challenge}
 
+        # Handle message events (v2 format)
+        if "header" in data and "event" in data:
+            event_type = data["header"].get("event_type")
             logger.info(f"Received event: {event_type}")
 
             # Only handle text messages
             if event_type == "im.message.receive_v1":
+                await handle_message(data["event"])
+
+        # Handle message events (v1 format - backward compatibility)
+        elif "event" in data:
+            event = data["event"]
+            event_type = data.get("type") or event.get("type")
+            logger.info(f"Received v1 event: {event_type}")
+
+            if "message" in event:
                 await handle_message(event)
 
         return {"success": True}
 
     except Exception as e:
         logger.error(f"Error handling event: {e}", exc_info=True)
+        logger.error(f"Request body: {body_str if 'body_str' in locals() else 'N/A'}")
         return {"error": str(e)}
 
 
