@@ -26,9 +26,16 @@ from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
 # Database
 from agno.db.sqlite import SqliteDb
-from agno.db.sqlite import AsyncSqliteDb
+from agno.db.postgres import PostgresDb
+# from agno.db.sqlite import AsyncSqliteDb
+SUPABASE_PROJECT = "hgppdplfffzynvxuifuy"
+SUPABASE_PASSWORD = "zNmj8qn5NISJdj3W"
 
-db = AsyncSqliteDb(db_file="data.db")
+SUPABASE_DB_URL = (
+    f"postgresql://postgres:{SUPABASE_PASSWORD}@db.{SUPABASE_PROJECT}:5432/postgres"
+)
+
+db = PostgresDb(ddb_url=SUPABASE_DB_URL)
 
 load_dotenv()
 
@@ -179,7 +186,7 @@ async def process_message(event: dict):
             cache_session=True
         )
 
-        response = lark_base_agent.arun(text)
+        response = lark_base_agent.run(text)
         reply = response.content if hasattr(response, 'content') else str(response)
 
         logger.info(f"AI: {reply[:80]}...")
