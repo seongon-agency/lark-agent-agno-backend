@@ -66,9 +66,29 @@ def setup_agent():
 
     # Give it a moment to initialize
     import time
-    time.sleep(3)
+    logger.info("Waiting 5 seconds for MCP to fully initialize...")
+    time.sleep(5)
 
-    logger.info("✓ Lark MCP tools ready")
+    # Debug: Check what we got
+    logger.info(f"MCP object type: {type(lark_mcp)}")
+    logger.info(f"MCP has 'functions': {hasattr(lark_mcp, 'functions')}")
+    logger.info(f"MCP has 'tools': {hasattr(lark_mcp, 'tools')}")
+
+    if hasattr(lark_mcp, 'functions'):
+        logger.info(f"MCP.functions type: {type(lark_mcp.functions)}")
+        logger.info(f"MCP.functions value: {lark_mcp.functions}")
+        if lark_mcp.functions:
+            for func in lark_mcp.functions:
+                logger.info(f"  - Tool: {func.name if hasattr(func, 'name') else func}")
+
+    if hasattr(lark_mcp, 'tools'):
+        logger.info(f"MCP.tools type: {type(lark_mcp.tools)}")
+        logger.info(f"MCP.tools value: {lark_mcp.tools}")
+
+    # Check all attributes
+    logger.info(f"MCP attributes: {dir(lark_mcp)}")
+
+    logger.info("✓ Lark MCP tools setup complete")
 
 
 def is_duplicate(msg_id: str) -> bool:
