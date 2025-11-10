@@ -24,4 +24,4 @@ mcp
 # database
 sqlalchemy
 aiosqlite
-psycopg2
+psycopg2-binary

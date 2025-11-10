@@ -25,17 +25,13 @@ import lark_oapi as lark
 from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
 # Database
-from agno.db.sqlite import SqliteDb
 from agno.db.postgres import PostgresDb
-# from agno.db.sqlite import AsyncSqliteDb
-SUPABASE_PROJECT = "hgppdplfffzynvxuifuy"
-SUPABASE_PASSWORD = "zNmj8qn5NISJdj3W"
 
-SUPABASE_DB_URL = (
-    f"postgresql://postgres:{SUPABASE_PASSWORD}@db.{SUPABASE_PROJECT}:5432/postgres"
-)
+# Get database URL from environment
+SUPABASE_DB_URL = os.getenv("SUPABASE_DB_URL")
 
-db = PostgresDb(db_url=SUPABASE_DB_URL)
+# Initialize database only if URL is provided
+db = PostgresDb(db_url=SUPABASE_DB_URL) if SUPABASE_DB_URL else None
 
 load_dotenv()
 
@@ -151,38 +147,37 @@ async def process_message(event: dict):
         chat_id = msg.get("chat_id")
         session = f"{chat_id}_{sender}"
 
-        # configure mcp
+        # Configure MCP
         lark_mcp = MultiMCPTools(
             commands=[
-                f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
+                f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
             ],
-        # env=content_env,
-        timeout_seconds=60,  # Increase timeout to 30 seconds
-        allow_partial_failure=True  # Allow agent to run even if Freepik connection fails
+            timeout_seconds=60,
+            allow_partial_failure=True
         )
 
         lark_base_agent = Agent(
-            name = "Lark Task Management Agent",
-            role = "Manage Lark Tasks within a Lark Base using Lark MCP",
-            model = xAI(
-            id="grok-4-0709",
-            api_key=os.getenv("XAI_API_KEY"),
+            name="Lark Task Management Agent",
+            role="Manage Lark Tasks within a Lark Base using Lark MCP",
+            model=xAI(
+                id="grok-2-1212",
+                api_key=os.getenv("XAI_API_KEY"),
             ),
             description="You are a task management assistant that helps users manage their tasks in Lark Base using Lark MCP. You can create, update, delete, and retrieve tasks based on user requests.",
             instructions=[
-                "Use the Lark MCP tool to interact with Lark Base. The specific base id is 'Q9gVbS1j1anjh7sP56Dln1xFgdG'.",
+                f"Use the Lark MCP tool to interact with Lark Base. The specific base id is '{os.getenv('LARK_BASE_ID', 'Q9gVbS1j1anjh7sP56Dln1xFgdG')}'.",
                 "When creating or updating tasks, ensure to include all necessary fields such as title, description, due date, and status.",
                 "Always confirm actions with the user before making changes to their tasks.",
                 "Provide clear and concise responses to the user regarding their task management requests."
             ],
-            tools = [lark_mcp],
-            db = db,
+            tools=[lark_mcp],
+            db=db,
             add_history_to_context=True,
             read_chat_history=True,
             num_history_runs=2,
             search_session_history=True,
             markdown=True,
-            debug_mode=False,  # Hide intermediate output - only team sees this
+            debug_mode=False,
             cache_session=True
         )
 
