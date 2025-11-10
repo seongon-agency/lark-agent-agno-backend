@@ -48,7 +48,7 @@ try:
     import time
     lark_mcp = MultiMCPTools(
         commands=[
-            f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
+            f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
         ],
         timeout_seconds=120,
         allow_partial_failure=True
