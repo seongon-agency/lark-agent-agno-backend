@@ -24,8 +24,9 @@ from agno.tools.mcp import MultiMCPTools
 import lark_oapi as lark
 from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
-# Storage (for agent sessions)
-from agno.storage.postgres import PostgresStorage
+# Database
+from agno.db.postgres import PostgresDb
+from agno.db.sqlite import SqliteDb
 
 load_dotenv()
 
@@ -38,16 +39,12 @@ SUPABASE_PROJECT = os.getenv("SUPABASE_PROJECT")
 SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
 SUPABASE_REGION = os.getenv("SUPABASE_REGION", "ap-southeast-1")  # Default region
 
-# Initialize storage - using Supabase connection pooler for Railway
+# Initialize database - using Supabase connection pooler for Railway
 # Use Supabase connection pooler (required for Railway/serverless)
 # Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
 SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
-storage = PostgresStorage(
-    table_name="agent_sessions",
-    db_url=SUPABASE_DB_URL
-)
-logger.info(f"Using Supabase PostgreSQL storage (region: {SUPABASE_REGION})")
-logger.info("Agent sessions will be stored in 'agent_sessions' table")
+db = PostgresDb(db_url=SUPABASE_DB_URL)
+logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
 
 
 app = FastAPI(title="Lark Agno Bot")
@@ -184,7 +181,7 @@ async def process_message(event: dict):
                 "Provide clear and concise responses to the user regarding their task management requests."
             ],
             tools=[lark_mcp],
-            storage=storage,
+            db=db,
             add_history_to_context=True,
             read_chat_history=True,
             num_history_runs=3,
