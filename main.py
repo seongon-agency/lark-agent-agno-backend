@@ -17,6 +17,7 @@ from Crypto.Util.Padding import unpad
 from agno.agent import Agent
 # from agno.models.openai import OpenAIChat
 from agno.models.xai import xAI
+from agno.models.anthropic import Claude
 from agno.tools.mcp import MultiMCPTools
 
 
@@ -169,13 +170,13 @@ async def process_message(event: dict):
             session_id=session,
             name="Lark Task Management Agent",
             role="Manage Lark Tasks within a Lark Base using Lark MCP",
-            model=xAI(
-                id="grok-4-0709",
-                api_key=os.getenv("XAI_API_KEY"),
+            model=Claude(
+                id="claude-sonnet-4-5-20250929",
+                api_key=os.getenv("ANTHROPIC_API_KEY"),
             ),
             description="You are a task management assistant that helps users manage their tasks in Lark Base using Lark MCP. You can create, update, delete, and retrieve tasks based on user requests.",
             instructions=[
-                f"Use the Lark MCP tool to interact with Lark Base. The specific base id is '{os.getenv('LARK_BASE_ID', 'Q9gVbS1j1anjh7sP56Dln1xFgdG')}'.",
+                f"Use the Lark MCP tool to interact with Lark Base. The specific base id is 'Q9gVbS1j1anjh7sP56Dln1xFgdG'.",
                 "When creating or updating tasks, ensure to include all necessary fields such as title, description, due date, and status.",
                 "Always confirm actions with the user before making changes to their tasks.",
                 "Provide clear and concise responses to the user regarding their task management requests."
