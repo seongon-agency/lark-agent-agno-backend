@@ -15,13 +15,9 @@ from Crypto.Util.Padding import unpad
 
 # Agno Imports
 from agno.agent import Agent
-from agno.os import AgentOS
-
-# from agno.models.openai import OpenAIChat
 from agno.models.xai import xAI
 from agno.models.anthropic import Claude
 from agno.tools.mcp import MultiMCPTools
-
 
 # Larksuite SDK Imports
 import lark_oapi as lark
@@ -29,7 +25,6 @@ from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
 # Database
 from agno.db.postgres import PostgresDb
-from agno.db.sqlite import SqliteDb
 
 load_dotenv()
 
@@ -40,18 +35,34 @@ logger = logging.getLogger(__name__)
 # Get Supabase credentials from environment
 SUPABASE_PROJECT = os.getenv("SUPABASE_PROJECT")
 SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
-SUPABASE_REGION = os.getenv("SUPABASE_REGION", "ap-southeast-1")  # Default region
+SUPABASE_REGION = os.getenv("SUPABASE_REGION", "ap-southeast-1")
 
-# Initialize database - using Supabase connection pooler for Railway
-# Use Supabase connection pooler (required for Railway/serverless)
-# Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
+# Initialize database
 SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
 db = PostgresDb(db_url=SUPABASE_DB_URL)
-logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
+logger.info(f"Using Supabase PostgreSQL (region: {SUPABASE_REGION})")
 
+# Initialize MCP tools ONCE at startup
+logger.info("Initializing Lark MCP tools...")
+try:
+    lark_mcp = MultiMCPTools(
+        commands=[
+            f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
+        ],
+        timeout_seconds=60,
+        allow_partial_failure=True
+    )
+    tool_names = [tool.name for tool in lark_mcp.functions] if hasattr(lark_mcp, 'functions') else []
+    logger.info(f"✓ Lark MCP initialized successfully")
+    logger.info(f"✓ Available tools: {len(tool_names)} tools")
+except Exception as e:
+    logger.error(f"✗ Failed to initialize MCP: {e}")
+    lark_mcp = None
 
+# Create FastAPI app
 app = FastAPI(title="Lark Agno Bot")
 
+# Feishu client
 feishu_client = lark.Client.builder() \
     .app_id(os.getenv("APP_ID")) \
     .app_secret(os.getenv("APP_SECRET")) \
@@ -154,34 +165,12 @@ async def process_message(event: dict):
 
         logger.info(f"User: {text}")
 
-        # Create AI agent
+        # Get session info
         sender = event.get("sender", {}).get("sender_id", {}).get("user_id", "")
         chat_id = msg.get("chat_id")
         session = f"{chat_id}_{sender}"
 
-        # Configure MCP
-        logger.info("Initializing Lark MCP tools...")
-        try:
-            lark_mcp = MultiMCPTools(
-                commands=[
-                    # f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
-                    f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
-                ],
-                timeout_seconds=120,  # Increased timeout
-                allow_partial_failure=True  # Fail if MCP doesn't work
-            )
-            # List available tools
-            tool_names = [tool.name for tool in lark_mcp.functions] if hasattr(lark_mcp, 'functions') else []
-            logger.info(f"✓ Lark MCP tools initialized successfully!")
-            logger.info(f"✓ Available tools: {tool_names}")
-            logger.info(f"✓ Total tools available: {len(tool_names)}")
-        except Exception as e:
-            logger.error(f"✗ FAILED to initialize Lark MCP tools: {e}")
-            logger.error(f"✗ Error type: {type(e).__name__}")
-            import traceback
-            logger.error(f"✗ Traceback: {traceback.format_exc()}")
-            raise
-
+        # Create agent for this session
         lark_base_agent = Agent(
             session_id=session,
             name="Lark Task Management Agent",
@@ -199,15 +188,15 @@ async def process_message(event: dict):
                 "After using a tool, describe what action was taken based on the tool's response.",
                 "If a tool call fails, explain the error to the user."
             ],
-            tools=[lark_mcp],
+            tools=[lark_mcp] if lark_mcp else [],
             db=db,
             add_history_to_context=True,
             read_chat_history=True,
             num_history_runs=3,
             search_session_history=True,
-            # show_tool_calls=True,  # Show tool usage to user
             markdown=True,
-            debug_mode=True
+            debug_mode=True,
+            cache_session=True
         )
 
         logger.info(f"Using session: {session}")
@@ -217,38 +206,18 @@ async def process_message(event: dict):
         logger.info(f"AI: {reply[:80]}...")
         send_message(chat_id, reply)
 
-        agent_os = AgentOS(
-        id="my os",
-        description="My AgentOS",
-        # agents=[assistant],
-        # teams=[content_team],
-        agents=[lark_base_agent]
-    )
-
     except Exception as e:
         logger.error(f"Error: {e}")
+        import traceback
+        logger.error(traceback.format_exc())
         try:
             send_message(msg.get("chat_id"), "Sorry, an error occurred.")
         except:
             pass
-    return agent_os
-
-os_instance = process_message()
-app = os_instance.get_app()
-
-# Add CORS middleware to allow frontend to connect
-from fastapi.middleware.cors import CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for now - you can restrict this later
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 if __name__ == "__main__":
-    required = ["APP_ID", "APP_SECRET", "XAI_API_KEY"]
+    required = ["APP_ID", "APP_SECRET", "ANTHROPIC_API_KEY"]
     missing = [v for v in required if not os.getenv(v)]
 
     if missing:
