@@ -11,6 +11,7 @@ agno>=2.0.0
 
 # OpenAI
 openai>=1.40.0
+anthropic
 
 # Cryptography for Lark encryption
 pycryptodome>=3.19.0
