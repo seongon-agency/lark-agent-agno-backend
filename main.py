@@ -170,7 +170,7 @@ async def process_message(event: dict):
             name="Lark Task Management Agent",
             role="Manage Lark Tasks within a Lark Base using Lark MCP",
             model=xAI(
-                id="grok-2-1212",
+                id="grok-4-0709",
                 api_key=os.getenv("XAI_API_KEY"),
             ),
             description="You are a task management assistant that helps users manage their tasks in Lark Base using Lark MCP. You can create, update, delete, and retrieve tasks based on user requests.",
@@ -184,9 +184,9 @@ async def process_message(event: dict):
             db=db,
             add_history_to_context=True,
             read_chat_history=True,
-            num_history_runs=3,
+            num_history_runs=10,
             search_session_history=True,
-            markdown=True,
+            # markdown=True,
             debug_mode=True
         )
 
