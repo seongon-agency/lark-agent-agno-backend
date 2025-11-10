@@ -85,6 +85,39 @@ async def root():
     }
 
 
+@app.post("/webhook/card")
+async def handle_card(request: Request):
+    """Handle Feishu card action webhooks"""
+    try:
+        body = await request.body()
+        body_str = body.decode('utf-8')
+
+        logger.info(f"Received card webhook request: {body_str[:200]}")
+
+        data = json.loads(body_str)
+
+        # Handle URL verification challenge (v1 format)
+        if "challenge" in data:
+            challenge = data["challenge"]
+            logger.info(f"Card webhook - Received challenge: {challenge}")
+            return {"challenge": challenge}
+
+        # Handle URL verification challenge (v2 format)
+        if "type" in data and data["type"] == "url_verification":
+            challenge = data.get("challenge", "")
+            logger.info(f"Card webhook - Received v2 challenge: {challenge}")
+            return {"challenge": challenge}
+
+        # For now, just acknowledge card actions
+        logger.info(f"Card action received: {data.get('action', {}).get('value', 'unknown')}")
+        return {"success": True}
+
+    except Exception as e:
+        logger.error(f"Error handling card webhook: {e}", exc_info=True)
+        logger.error(f"Request body: {body_str if 'body_str' in locals() else 'N/A'}")
+        return {"error": str(e)}
+
+
 @app.post("/webhook/event")
 async def handle_event(request: Request):
     """Handle Feishu webhook events"""
