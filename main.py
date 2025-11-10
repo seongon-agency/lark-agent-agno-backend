@@ -158,6 +158,7 @@ async def process_message(event: dict):
         session = f"{chat_id}_{sender}"
 
         # Configure MCP
+        logger.info("Initializing Lark MCP tools...")
         lark_mcp = MultiMCPTools(
             commands=[
                 f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
@@ -165,6 +166,7 @@ async def process_message(event: dict):
             timeout_seconds=60,
             allow_partial_failure=True
         )
+        logger.info(f"Lark MCP tools initialized. Available tools: {lark_mcp.functions if hasattr(lark_mcp, 'functions') else 'checking...'}")
 
         lark_base_agent = Agent(
             session_id=session,
@@ -174,12 +176,14 @@ async def process_message(event: dict):
                 id="claude-sonnet-4-5-20250929",
                 api_key=os.getenv("ANTHROPIC_API_KEY"),
             ),
-            description="You are a task management assistant that helps users manage their tasks in Lark Base using Lark MCP. You can create, update, delete, and retrieve tasks based on user requests.",
+            description="You are a task management assistant with REAL access to Lark Base via MCP tools. You can actually create, read, update, and delete tasks.",
             instructions=[
-                f"Use the Lark MCP tool to interact with Lark Base. The specific base id is 'Q9gVbS1j1anjh7sP56Dln1xFgdG'.",
-                "When creating or updating tasks, ensure to include all necessary fields such as title, description, due date, and status.",
-                "Always confirm actions with the user before making changes to their tasks.",
-                "Provide clear and concise responses to the user regarding their task management requests."
+                "IMPORTANT: You have actual, working Lark MCP tools available. Use them to interact with Lark Base.",
+                f"The Lark Base ID is: {os.getenv('LARK_BASE_ID', 'Q9gVbS1j1anjh7sP56Dln1xFgdG')}",
+                "When the user asks to create, list, update, or delete tasks - USE THE MCP TOOLS to actually do it.",
+                "Do NOT say you cannot access Lark Base - you can and should use the tools provided.",
+                "After using a tool, describe what action was taken based on the tool's response.",
+                "If a tool call fails, explain the error to the user."
             ],
             tools=[lark_mcp],
             db=db,
@@ -187,7 +191,8 @@ async def process_message(event: dict):
             read_chat_history=True,
             num_history_runs=3,
             search_session_history=True,
-            # markdown=True,
+            show_tool_calls=True,  # Show tool usage to user
+            markdown=True,
             debug_mode=True
         )
 
