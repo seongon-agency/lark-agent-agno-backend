@@ -191,7 +191,7 @@ async def process_message(event: dict):
             read_chat_history=True,
             num_history_runs=3,
             search_session_history=True,
-            show_tool_calls=True,  # Show tool usage to user
+            # show_tool_calls=True,  # Show tool usage to user
             markdown=True,
             debug_mode=True
         )
