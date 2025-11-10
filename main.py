@@ -15,6 +15,8 @@ from Crypto.Util.Padding import unpad
 
 # Agno Imports
 from agno.agent import Agent
+from agno.os import AgentOS
+
 # from agno.models.openai import OpenAIChat
 from agno.models.xai import xAI
 from agno.models.anthropic import Claude
@@ -162,10 +164,11 @@ async def process_message(event: dict):
         try:
             lark_mcp = MultiMCPTools(
                 commands=[
-                    f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
+                    # f"npx -y @larksuiteoapi/lark-mcp mcp -a {os.getenv('APP_ID')} -s {os.getenv('APP_SECRET')} -d https://open.larksuite.com/ --oauth"
+                    f"npx -y @larksuiteoapi/lark-mcp mcp -a cli_a7e3876125b95010 -s bnR0sCHHILwnt15g8Lr0HgTIbk0ZVelI -d https://open.larksuite.com/ --oauth"
                 ],
                 timeout_seconds=120,  # Increased timeout
-                allow_partial_failure=False  # Fail if MCP doesn't work
+                allow_partial_failure=True  # Fail if MCP doesn't work
             )
             # List available tools
             tool_names = [tool.name for tool in lark_mcp.functions] if hasattr(lark_mcp, 'functions') else []
@@ -214,12 +217,34 @@ async def process_message(event: dict):
         logger.info(f"AI: {reply[:80]}...")
         send_message(chat_id, reply)
 
+        agent_os = AgentOS(
+        id="my os",
+        description="My AgentOS",
+        # agents=[assistant],
+        # teams=[content_team],
+        agents=[lark_base_agent]
+    )
+
     except Exception as e:
         logger.error(f"Error: {e}")
         try:
             send_message(msg.get("chat_id"), "Sorry, an error occurred.")
         except:
             pass
+    return agent_os
+
+os_instance = process_message()
+app = os_instance.get_app()
+
+# Add CORS middleware to allow frontend to connect
+from fastapi.middleware.cors import CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for now - you can restrict this later
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 if __name__ == "__main__":
