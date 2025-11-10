@@ -1,15 +1,13 @@
 # Feishu Bot with Agno AI
 
-Minimal Feishu/Lark task management bot powered by Agno AI framework. Clean, simple, just works.
+Minimal Feishu/Lark bot powered by Agno AI framework. Clean, simple, just works.
 
 ## Features
 
-- ✅ AI-powered task management via Lark Base
-- ✅ Persistent conversation memory (SQLite)
-- ✅ Lark MCP integration for task operations
+- ✅ Text chat with AI (Agno + OpenAI)
 - ✅ Message deduplication
 - ✅ Encrypted webhook support
-- ✅ 159 lines of clean code
+- ✅ 168 lines of clean code
 
 ## Quick Start
 
@@ -30,8 +28,7 @@ Edit `.env`:
 APP_ID=cli_xxxxx
 APP_SECRET=xxxxx
 APP_ENCRYPT_KEY=xxxxx
-XAI_API_KEY=xai-xxxxx
-LARK_BASE_ID=your_base_id
+OPENAI_KEY=sk-xxxxx
 ```
 
 ### 3. Run
@@ -236,7 +233,7 @@ AGENT_TEMPERATURE=0.9
 
 ```
 lark-agent-agno-backend/
-├── main.py              # Bot logic (159 lines)
+├── main.py              # Bot logic (168 lines)
 ├── requirements.txt     # Dependencies
 ├── .env.example        # Config template
 ├── Dockerfile          # Container
@@ -251,8 +248,8 @@ lark-agent-agno-backend/
 - `decrypt()` - Handles encrypted webhooks
 - `send_message()` - Sends to Lark
 - `webhook_event()` - Receives messages
-- `process_message()` - AI processing with Lark MCP tools
-- Agent creation at line 159 ← **Customize here!**
+- `process_message()` - AI processing
+- Agent creation at line 135 ← **Customize here!**
 
 ## Deployment
 
