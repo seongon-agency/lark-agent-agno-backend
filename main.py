@@ -40,21 +40,12 @@ SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
 SUPABASE_REGION = os.getenv("SUPABASE_REGION", "ap-southeast-1")  # Default region
 
 # Initialize database - using Supabase connection pooler for Railway
-db = None
-if SUPABASE_PROJECT and SUPABASE_PASSWORD:
-    # Use Supabase connection pooler (required for Railway/serverless)
-    # Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
-    SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
-    db = PostgresDb(db_url=SUPABASE_DB_URL)
-    logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
-else:
-    db = SqliteDb(db_file="./data/agent_memory.db")
-    logger.info("Using SQLite for memory (./data/agent_memory.db)")
+# Use Supabase connection pooler (required for Railway/serverless)
+# Format: postgresql://postgres.{PROJECT_REF}:{PASSWORD}@aws-0-{REGION}.pooler.supabase.com:6543/postgres
+SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-1-{SUPABASE_REGION}.pooler.supabase.com:5432/postgres"
+db = PostgresDb(db_url=SUPABASE_DB_URL)
+logger.info(f"Using Supabase PostgreSQL pooler (region: {SUPABASE_REGION})")
 
-# Ensure db is always set (fallback)
-if db is None:
-    db = SqliteDb(db_file="./data/agent_memory.db")
-    logger.info("Fallback: Using SQLite for memory")
 
 app = FastAPI(title="Lark Agno Bot")
 
