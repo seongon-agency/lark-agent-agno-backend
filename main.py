@@ -24,6 +24,11 @@ from agno.tools.mcp import MultiMCPTools
 import lark_oapi as lark
 from lark_oapi.api.im.v1 import CreateMessageRequest, CreateMessageRequestBody
 
+# Database
+from agno.db.sqlite import SqliteDb
+
+db = SqliteDb(db_file="agno.db")
+
 load_dotenv()
 
 logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
@@ -163,7 +168,7 @@ async def process_message(event: dict):
                 "Provide clear and concise responses to the user regarding their task management requests."
             ],
             tools = [lark_mcp],
-            # db = db,
+            db = db,
             add_history_to_context=True,
             read_chat_history=True,
             num_history_runs=2,
