@@ -34,7 +34,7 @@ SUPABASE_PASSWORD = os.getenv("SUPABASE_PASSWORD")
 
 # Initialize database - use Supabase if available, otherwise SQLite
 if SUPABASE_PROJECT and SUPABASE_PASSWORD:
-    SUPABASE_DB_URL = f"postgresql://postgres.{SUPABASE_PROJECT}:{SUPABASE_PASSWORD}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
+    SUPABASE_DB_URL = f"postgresql://postgres:{SUPABASE_PASSWORD}@db.{SUPABASE_PROJECT}.supabase.co:5432/postgres"
     db = PostgresDb(db_url=SUPABASE_DB_URL)
     logger.info("Using Supabase PostgreSQL for memory")
 else:
