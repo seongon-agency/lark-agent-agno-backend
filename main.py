@@ -157,6 +157,7 @@ async def process_message(event: dict):
         )
 
         lark_base_agent = Agent(
+            session_id=session,  # Set session ID for memory
             name="Lark Task Management Agent",
             role="Manage Lark Tasks within a Lark Base using Lark MCP",
             model=xAI(
@@ -174,13 +175,14 @@ async def process_message(event: dict):
             db=db,
             add_history_to_context=True,
             read_chat_history=True,
-            num_history_runs=2,
+            num_history_runs=3,
             search_session_history=True,
             markdown=True,
             debug_mode=False,
-            cache_session=True
+            create_session_if_not_exists=True  # Create session if needed
         )
 
+        logger.info(f"Using session: {session}")
         response = lark_base_agent.run(text)
         reply = response.content if hasattr(response, 'content') else str(response)
 
